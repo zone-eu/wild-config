@@ -125,4 +125,6 @@ console.log(config.server.enabled);
 
 ## License
 
-**MIT**
+Dual license **MIT or EUPL-1.1+**
+
+> `wild-config` is part of the Zone Mail Suite (ZMS). Suite of programs and modules for an efficient, fast and modern email server.
