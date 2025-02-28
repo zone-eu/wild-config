@@ -8,7 +8,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/nodemailer/wild-config.git"
+        "url": "git+https://github.com/zone-eu/wild-config.git"
     },
     "keywords": [
         "config"
@@ -16,9 +16,9 @@
     "author": "Andris Reinman",
     "license": "(MIT OR EUPL-1.1+)",
     "bugs": {
-        "url": "https://github.com/nodemailer/wild-config/issues"
+        "url": "https://github.com/zone-eu/wild-config/issues"
     },
-    "homepage": "https://github.com/nodemailer/wild-config#readme",
+    "homepage": "https://github.com/zone-eu/wild-config#readme",
     "dependencies": {
         "deep-extend": "0.6.0",
         "glob": "8.0.3",
