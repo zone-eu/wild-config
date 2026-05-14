@@ -1,7 +1,9 @@
+// @ts-check
 /* eslint no-console: 0, global-require: 0 */
 'use strict';
 
 if (process.env.DISABLE_WILD_CONFIG === 'true') {
+    // @ts-ignore
     return;
 }
 
@@ -27,13 +29,14 @@ const argList = process.argv.slice(2);
 // appconf_key_name=123 becomes --key.name=123
 Object.keys(process.env).forEach(key => {
     if (/^appconf_/i.test(key)) {
-        let cKey = key.substr('appconf_'.length).replace(/_/g, '.');
+        let cKey = key.substring('appconf_'.length).replace(/_/g, '.');
         if (!argList.some(e => e.indexOf(`--${cKey}=`) >= 0)) {
             argList.push(`--${cKey}=${process.env[key]}`);
         }
     }
 });
 
+/** @type {Record<string, any>} */
 const argv = require('minimist')(argList);
 const configPath = process.env.NODE_CONFIG_PATH || argv.config || false;
 
@@ -43,19 +46,35 @@ module.exports = {
     configDirectory
 };
 
+/**
+ * @param {boolean} [skipEvent]
+ */
 let loadConfig = skipEvent => {
+    /** @type {(import('./index').ConfigObject | import('./index').ConfigValue[])[]} */
     let sources = [{}];
 
+    /**
+     * @param {string} basePath
+     * @param {string} contents
+     * @returns {string}
+     */
     function extendToml(basePath, contents) {
         // # @include "/path/to/toml"
         let c = 0;
-        return contents.replace(/^\s*#\s*@include\s*"([^"]+)"/gim, (m, p) => {
+
+        /**
+         * @param {string} match
+         * @param {string} p
+         * @returns {string}
+         */
+        const replaceInclude = (match, p) => {
             if (!path.isAbsolute(p)) {
                 p = path.join(basePath, p);
             }
             p = p.replace(/\{ENV\}/gi, env);
-            let res = m;
+            let res = match;
 
+            /** @type {string[]} */
             let files;
             if (p.indexOf('*') >= 0) {
                 files = glob.sync(p);
@@ -64,7 +83,7 @@ let loadConfig = skipEvent => {
             }
 
             files.forEach(file => {
-                let stat = fs.statSync(file);
+                const stat = fs.statSync(file);
 
                 if (!stat.isFile()) {
                     throw new Error(file + ' is not a file');
@@ -73,13 +92,20 @@ let loadConfig = skipEvent => {
             res = '__include_file_path_' + ++c + '=' + JSON.stringify(files);
 
             return res;
-        });
+        };
+
+        return contents.replace(/^\s*#\s*@include\s*"([^"]+)"/gim, replaceInclude);
     }
 
+    /**
+     * @param {string} filePath
+     * @returns {import('./index').ConfigObject | import('./index').ConfigValue[] | undefined}
+     */
     function parseFile(filePath) {
         let pathParts = path.parse(filePath);
         let ext = pathParts.ext.toLowerCase();
         let basePath = pathParts.dir;
+        /** @type {import('./index').ConfigObject | import('./index').ConfigValue[] | undefined} */
         let parsed;
         try {
             let contents = fs.readFileSync(filePath, 'utf-8');
@@ -87,6 +113,7 @@ let loadConfig = skipEvent => {
             switch (ext) {
                 case '.js': {
                     let script = new vm.Script(contents);
+                    /** @type{vm.Context} */
                     const sandbox = {
                         require,
                         __dirname: basePath,
@@ -107,15 +134,27 @@ let loadConfig = skipEvent => {
                     break;
             }
         } catch (E) {
-            E.message = filePath + ': ' + E.message;
-            throw E;
+            let err = /** @type {Error & { code?: string }} */ (E);
+            err.message = filePath + ': ' + err.message;
+            throw err;
         }
         return parsed;
     }
 
+    /**
+     * @param {string} basePath
+     * @param {string} contents
+     * @returns {import('./index').ConfigObject}
+     */
     function tomlParser(basePath, contents) {
         let parsed = toml.parse(extendToml(basePath, contents));
         // find includes
+        /**
+         * @param {import('./index').ConfigValue} node
+         * @param {import('./index').ConfigObject | import('./index').ConfigValue[] | false} parentNode
+         * @param {string | false} nodeKey
+         * @param {number} level
+         */
         let walk = (node, parentNode, nodeKey, level) => {
             if (level > 100) {
                 throw new Error('Too much nesting in configuration file');
@@ -126,12 +165,14 @@ let loadConfig = skipEvent => {
             } else if (node && typeof node === 'object') {
                 Object.keys(node || {}).forEach(key => {
                     if (/^__include_file_path_\d+$/.test(key) && Array.isArray(node[key])) {
-                        let filePaths = node[key];
+                        let filePaths = /** @type {string[]} */ (node[key]);
                         delete node[key];
                         filePaths.forEach(filePath => {
                             let parsed = parseFile(filePath);
-                            if (Array.isArray(parsed)) {
-                                if (parentNode && nodeKey && Object.keys(node).length === 0) {
+                            if (!parsed) {
+                                return;
+                            } else if (Array.isArray(parsed)) {
+                                if (parentNode && !Array.isArray(parentNode) && nodeKey && Object.keys(node).length === 0) {
                                     parentNode[nodeKey] = parsed;
                                 }
                             } else {
@@ -152,6 +193,10 @@ let loadConfig = skipEvent => {
         return parsed;
     }
 
+    /**
+     * @param {string | false} filePath
+     * @param {boolean} [ignoreMissing]
+     */
     let loadFromFile = (filePath, ignoreMissing) => {
         if (!filePath) {
             // do nothing
@@ -163,9 +208,10 @@ let loadConfig = skipEvent => {
                 sources.push(parsed);
             }
         } catch (E) {
-            if (E.code !== 'ENOENT' || !ignoreMissing) {
+            let err = /** @type {Error & { code?: string }} */ (E);
+            if (err.code !== 'ENOENT' || !ignoreMissing) {
                 // file missing, ignore
-                console.error('[' + filePath + '] ' + E.message);
+                console.error('[' + filePath + '] ' + err.message);
                 process.exit(1);
             }
         }
@@ -207,11 +253,16 @@ let loadConfig = skipEvent => {
     loadFromFile(configPath);
 
     // join found files
-    let data = deepExtend(...sources);
+    /** @type {import('./index').ConfigObject} */
+    let data = /** @type {import('./index').ConfigObject} */ (/** @type {any} */ (deepExtend)(...sources));
 
     delete argv._;
     delete argv.config;
 
+    /**
+     * @param {import('./index').ConfigObject} cParent
+     * @param {import('./index').ConfigObject} eParent
+     */
     let walkConfig = (cParent, eParent) => {
         Object.keys(eParent || {}).forEach(key => {
             if (!(key in cParent)) {
@@ -228,7 +279,10 @@ let loadConfig = skipEvent => {
                         // null
                         return;
                     }
-                    return walkConfig(cParent[key], eParent[key]);
+                    return walkConfig(
+                        /** @type {import('./index').ConfigObject} */ (cParent[key]),
+                        /** @type {import('./index').ConfigObject} */ (eParent[key])
+                    );
                 }
                 if (typeof eParent[key] === 'string' && Array.isArray(cParent[key])) {
                     eParent[key] = eParent[key].trim().split(/\s*,\s*/);
@@ -241,13 +295,13 @@ let loadConfig = skipEvent => {
             if (typeof cParent[key] === 'number') {
                 eParent[key] = Number(eParent[key]);
             } else if (typeof cParent[key] === 'boolean') {
-                if (!isNaN(value)) {
+                if (!isNaN(/** @type {any} */ (value))) {
                     value = Number(value);
                 } else {
-                    value = value.toLowerCase();
+                    value = (/** @type {string} */ (value)).toLowerCase();
                 }
                 let falsy = ['false', 'null', 'undefined', 'no', '0', '', 0];
-                eParent[key] = falsy.includes(value) ? false : !!value;
+                eParent[key] = falsy.includes(/** @type {string | number} */ (value)) ? false : !!value;
             }
         });
     };
@@ -259,7 +313,7 @@ let loadConfig = skipEvent => {
 
     Object.keys(data).forEach(key => {
         if (key !== 'on') {
-            module.exports[key] = data[key];
+            /** @type {import('./index').WildConfig} */ (module.exports)[key] = data[key];
         }
     });
 
@@ -267,12 +321,13 @@ let loadConfig = skipEvent => {
         events.emit('reload');
     }
 };
-events.reload = loadConfig;
+/** @type {EventEmitter & { reload?: typeof loadConfig }} */ (events).reload = loadConfig;
 
 Object.defineProperty(module.exports, 'on', {
     enumerable: false,
     configurable: false,
     writable: false,
+    /** @type {import('./index').WildConfig['on']} */
     value: (...args) => events.on(...args)
 });
 
