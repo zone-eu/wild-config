@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.7.4](https://github.com/zone-eu/wild-config/compare/v1.7.3...v1.7.4) (2026-05-14)
+
+
+### Bug Fixes
+
+* Bump flatted from 3.3.3 to 3.4.2 ([#20](https://github.com/zone-eu/wild-config/issues/20)) ([d265d42](https://github.com/zone-eu/wild-config/commit/d265d42da1a0b091d1ea4c1b49587cd52164485c))
+* Bump picomatch from 2.3.1 to 2.3.2 ([#21](https://github.com/zone-eu/wild-config/issues/21)) ([17c8ebd](https://github.com/zone-eu/wild-config/commit/17c8ebd032f0d88649ff03b9fa7f38d5142d4c8b))
+* ZMS-63: Add types to project ([#23](https://github.com/zone-eu/wild-config/issues/23)) ([80e18fb](https://github.com/zone-eu/wild-config/commit/80e18fb8abdc2502f32431159aa15c45dd9baba3))
+
 ## [1.7.3](https://github.com/zone-eu/wild-config/compare/v1.7.2...v1.7.3) (2025-12-08)
 
 
