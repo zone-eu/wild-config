@@ -3,8 +3,10 @@
     "version": "1.7.3",
     "description": "Configuration management module",
     "main": "index.js",
+    "types": "index.d.ts",
     "scripts": {
-        "test": "grunt"
+        "test": "grunt",
+        "typecheck": "tsc -p tsconfig.json"
     },
     "repository": {
         "type": "git",
@@ -26,10 +28,17 @@
         "toml": "3.0.0"
     },
     "devDependencies": {
+        "@types/deep-extend": "0.6.2",
+        "@types/eslint-config-prettier": "6.11.3",
+        "@types/glob": "8.1.0",
+        "@types/grunt": "0.4.32",
+        "@types/minimist": "1.2.5",
+        "@types/node": "25.7.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.5.0",
         "grunt": "1.5.3",
         "grunt-cli": "1.4.3",
-        "grunt-eslint": "24.0.0"
+        "grunt-eslint": "24.0.0",
+        "typescript": "6.0.3"
     }
 }

@@ -3,4 +3,4 @@
 'use strict';
 
 let config = require('../index');
-console.log(JSON.stringify(config, false, 4));
+console.log(JSON.stringify(config, null, 4));
