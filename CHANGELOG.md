@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.5](https://github.com/zone-eu/wild-config/compare/v1.7.4...v1.7.5) (2026-05-19)
+
+
+### Bug Fixes
+
+* Add jsdoc to funcs and variables ([#26](https://github.com/zone-eu/wild-config/issues/26)) ([f81788e](https://github.com/zone-eu/wild-config/commit/f81788e839be45df293e0cd808f67e18fae033ef))
+
 ## [1.7.4](https://github.com/zone-eu/wild-config/compare/v1.7.3...v1.7.4) (2026-05-14)
 
 
