@@ -47,25 +47,34 @@ module.exports = {
 };
 
 /**
- * @param {boolean} [skipEvent]
+ * Loads configuration files, environment overrides and CLI overrides into the
+ * exported configuration object.
+ *
+ * @param {boolean} [skipEvent] If true, skips emitting the reload event after loading.
+ * @returns {void}
  */
 let loadConfig = skipEvent => {
     /** @type {(import('./index').ConfigObject | import('./index').ConfigValue[])[]} */
     let sources = [{}];
 
     /**
-     * @param {string} basePath
-     * @param {string} contents
-     * @returns {string}
+     * Rewrites TOML include directives into placeholder keys that the TOML
+     * parser can read.
+     *
+     * @param {string} basePath Directory used to resolve relative include paths.
+     * @param {string} contents Raw TOML file contents.
+     * @returns {string} TOML contents with include directives replaced.
      */
     function extendToml(basePath, contents) {
         // # @include "/path/to/toml"
         let c = 0;
 
         /**
-         * @param {string} match
-         * @param {string} p
-         * @returns {string}
+         * Resolves an include directive match into a placeholder assignment.
+         *
+         * @param {string} match Full include directive match.
+         * @param {string} p Include path or glob from the directive.
+         * @returns {string} Placeholder assignment containing matched file paths.
          */
         const replaceInclude = (match, p) => {
             if (!path.isAbsolute(p)) {
@@ -98,8 +107,10 @@ let loadConfig = skipEvent => {
     }
 
     /**
-     * @param {string} filePath
-     * @returns {import('./index').ConfigObject | import('./index').ConfigValue[] | undefined}
+     * Parses a supported configuration file.
+     *
+     * @param {string} filePath Path to a JavaScript, TOML or JSON configuration file.
+     * @returns {import('./index').ConfigObject | import('./index').ConfigValue[] | undefined} Parsed configuration data, or undefined for unsupported extensions.
      */
     function parseFile(filePath) {
         let pathParts = path.parse(filePath);
@@ -142,18 +153,24 @@ let loadConfig = skipEvent => {
     }
 
     /**
-     * @param {string} basePath
-     * @param {string} contents
-     * @returns {import('./index').ConfigObject}
+     * Parses TOML contents and expands any nested include directives.
+     *
+     * @param {string} basePath Directory used to resolve relative include paths.
+     * @param {string} contents Raw TOML file contents.
+     * @returns {import('./index').ConfigObject} Parsed TOML configuration object.
      */
     function tomlParser(basePath, contents) {
         let parsed = toml.parse(extendToml(basePath, contents));
         // find includes
         /**
-         * @param {import('./index').ConfigValue} node
-         * @param {import('./index').ConfigObject | import('./index').ConfigValue[] | false} parentNode
-         * @param {string | false} nodeKey
-         * @param {number} level
+         * Walks parsed TOML values and replaces include placeholders with parsed
+         * file contents.
+         *
+         * @param {import('./index').ConfigValue} node Current value being inspected.
+         * @param {import('./index').ConfigObject | import('./index').ConfigValue[] | false} parentNode Parent object or array for the current value.
+         * @param {string | false} nodeKey Key for the current value in the parent object.
+         * @param {number} level Current recursion depth.
+         * @returns {void}
          */
         let walk = (node, parentNode, nodeKey, level) => {
             if (level > 100) {
@@ -194,8 +211,11 @@ let loadConfig = skipEvent => {
     }
 
     /**
-     * @param {string | false} filePath
-     * @param {boolean} [ignoreMissing]
+     * Loads a configuration source and appends parsed data to the merge list.
+     *
+     * @param {string | false} filePath Path to load, or false to skip loading.
+     * @param {boolean} [ignoreMissing] If true, ignores missing files.
+     * @returns {void}
      */
     let loadFromFile = (filePath, ignoreMissing) => {
         if (!filePath) {
@@ -260,8 +280,12 @@ let loadConfig = skipEvent => {
     delete argv.config;
 
     /**
-     * @param {import('./index').ConfigObject} cParent
-     * @param {import('./index').ConfigObject} eParent
+     * Coerces CLI and environment override values to match existing config
+     * value types before merging them.
+     *
+     * @param {import('./index').ConfigObject} cParent Existing configuration branch.
+     * @param {import('./index').ConfigObject} eParent Override configuration branch.
+     * @returns {void}
      */
     let walkConfig = (cParent, eParent) => {
         Object.keys(eParent || {}).forEach(key => {
@@ -327,7 +351,11 @@ Object.defineProperty(module.exports, 'on', {
     enumerable: false,
     configurable: false,
     writable: false,
-    /** @type {import('./index').WildConfig['on']} */
+    /**
+     * Registers a listener on the internal configuration event emitter.
+     *
+     * @type {import('./index').WildConfig['on']}
+     */
     value: (...args) => events.on(...args)
 });
 
