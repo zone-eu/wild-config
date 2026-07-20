@@ -81,7 +81,6 @@ let loadConfig = skipEvent => {
                 p = path.join(basePath, p);
             }
             p = p.replace(/\{ENV\}/gi, env);
-            let res = match;
 
             /** @type {string[]} */
             let files;
@@ -98,9 +97,7 @@ let loadConfig = skipEvent => {
                     throw new Error(file + ' is not a file');
                 }
             });
-            res = '__include_file_path_' + ++c + '=' + JSON.stringify(files);
-
-            return res;
+            return '__include_file_path_' + ++c + '=' + JSON.stringify(files);
         };
 
         return contents.replace(/^\s*#\s*@include\s*"([^"]+)"/gim, replaceInclude);
@@ -265,7 +262,7 @@ let loadConfig = skipEvent => {
                 return a.path.localeCompare(b.path);
             })
             .forEach(file => loadFromFile(file.path));
-    } catch (E) {
+    } catch {
         // failed to list files
     }
 

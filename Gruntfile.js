@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @param {import('grunt')} grunt
+ * @param {typeof import('grunt')} grunt
  */
 module.exports = function(grunt) {
     // Project configuration.

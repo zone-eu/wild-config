@@ -6,7 +6,8 @@
     "types": "index.d.ts",
     "scripts": {
         "test": "grunt",
-        "typecheck": "tsc -p tsconfig.json"
+        "typecheck": "tsc -p tsconfig.json",
+        "update": "rm -rf node_modules package-lock.json && ncu -u && npm install"
     },
     "repository": {
         "type": "git",
@@ -23,22 +24,24 @@
     "homepage": "https://github.com/zone-eu/wild-config#readme",
     "dependencies": {
         "deep-extend": "0.6.0",
-        "glob": "8.0.3",
-        "minimist": "1.2.6",
-        "toml": "3.0.0"
+        "glob": "13.0.6",
+        "minimist": "1.2.8",
+        "toml": "5.0.0"
     },
     "devDependencies": {
+        "@eslint/js": "10.0.1",
         "@types/deep-extend": "0.6.2",
-        "@types/eslint-config-prettier": "6.11.3",
-        "@types/glob": "8.1.0",
+        "@types/glob": "9.0.0",
         "@types/grunt": "0.4.32",
         "@types/minimist": "1.2.5",
-        "@types/node": "25.7.0",
+        "@types/node": "26.1.1",
+        "eslint": "10.7.0",
         "eslint-config-nodemailer": "1.2.0",
-        "eslint-config-prettier": "8.5.0",
-        "grunt": "1.5.3",
-        "grunt-cli": "1.4.3",
-        "grunt-eslint": "24.0.0",
-        "typescript": "6.0.3"
+        "eslint-config-prettier": "10.1.8",
+        "globals": "17.7.0",
+        "grunt": "1.6.2",
+        "grunt-cli": "1.5.0",
+        "grunt-eslint": "26.0.0",
+        "typescript": "7.0.2"
     }
 }
