@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.6](https://github.com/zone-eu/wild-config/compare/v1.7.5...v1.7.6) (2026-07-20)
+
+
+### Bug Fixes
+
+* **deps:** update glob, toml and minimist ([5f78bcd](https://github.com/zone-eu/wild-config/commit/5f78bcddd14cba3d8ff87ac5e210a00c57615c3a))
+
 ## [1.7.5](https://github.com/zone-eu/wild-config/compare/v1.7.4...v1.7.5) (2026-05-19)
 
 
