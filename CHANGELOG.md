@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.7](https://github.com/zone-eu/wild-config/compare/v1.7.6...v1.7.7) (2026-09-28)
+
+
+### Bug Fixes
+
+* keep string values as strings, deterministic wildcard includes, case-insensitive APPCONF keys, reload drops removed keys ([ff9ab17](https://github.com/zone-eu/wild-config/commit/ff9ab1721f2b3463cfa0258f2f19cc99b998f4da))
+
 ## [1.7.6](https://github.com/zone-eu/wild-config/compare/v1.7.5...v1.7.6) (2026-07-20)
 
 
