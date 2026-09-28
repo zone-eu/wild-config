@@ -15,7 +15,6 @@ const env =
         .replace(/[^0-9a-z-_]/g, '') || 'development';
 
 const fs = require('fs');
-const glob = require('glob');
 const toml = require('toml');
 const path = require('path');
 const deepExtend = require('deep-extend');
@@ -23,22 +22,127 @@ const configDirectory = process.env.NODE_CONFIG_DIR || path.join(process.cwd(), 
 const events = new EventEmitter();
 const vm = require('vm');
 
-const argList = process.argv.slice(2);
+const minimist = require('minimist');
 
-// Populate environment variables into cli arguments
-// appconf_key_name=123 becomes --key.name=123
-Object.keys(process.env).forEach(key => {
-    if (/^appconf_/i.test(key)) {
-        let cKey = key.substring('appconf_'.length).replace(/_/g, '.');
-        if (!argList.some(e => e.indexOf(`--${cKey}=`) >= 0)) {
-            argList.push(`--${cKey}=${process.env[key]}`);
+const cliArgs = process.argv.slice(2);
+
+// APPCONF_ prefixed environment variables, for example appconf_key_name=123 becomes --key.name=123.
+// The names are mapped to config paths once the config files are loaded, see resolveEnvKey().
+const envOverrides = Object.keys(process.env)
+    .filter(key => /^appconf_/i.test(key))
+    .map(key => ({ name: key.substring('appconf_'.length), value: process.env[key] }));
+
+/**
+ * Parses override arguments. Every option that is given a value keeps it as the raw string:
+ * minimist would otherwise turn "12345678" into a Number and "0012" into 12, which breaks
+ * string settings such as secrets. walkConfig() converts values toward the type of the
+ * existing config value instead.
+ *
+ * `--key value` pairs are rewritten to `--key=value` here, so minimist only ever sees the
+ * unambiguous form and its own rule for when the next token is a value does not matter.
+ * Bare flags, `--no-key` and short options are left for minimist.
+ *
+ * @param {string[]} list Arguments in the --key=value or --key value form.
+ * @returns {{ argv: Record<string, any>, keys: Set<string> }} Parsed arguments and every long option name seen.
+ */
+let parseArgs = list => {
+    /** @type {string[]} */
+    let args = [];
+    /** @type {string[]} */
+    let stringKeys = [];
+    let keys = new Set();
+    for (let i = 0; i < list.length; i++) {
+        let arg = list[i];
+        if (arg === '--') {
+            // minimist treats everything after this as positional
+            args.push(...list.slice(i));
+            break;
         }
+        let match = arg.match(/^--([^=]+)(=?)/);
+        if (!match) {
+            args.push(arg);
+            continue;
+        }
+        let key = match[1];
+        if (/^no-/.test(key) && !match[2]) {
+            keys.add(key.substring(3));
+            args.push(arg);
+            continue;
+        }
+        keys.add(key);
+        let next = list[i + 1];
+        if (!match[2] && next !== undefined && !/^-./.test(next)) {
+            arg = '--' + key + '=' + next;
+            i++;
+        }
+        if (arg.includes('=')) {
+            stringKeys.push(key);
+        }
+        args.push(arg);
     }
-});
+    return { argv: minimist(args, { string: stringKeys }), keys };
+};
 
 /** @type {Record<string, any>} */
-const argv = require('minimist')(argList);
-const configPath = process.env.NODE_CONFIG_PATH || argv.config || false;
+const startupArgv = minimist(cliArgs, { string: ['config'] });
+const envConfigPath = envOverrides.find(entry => entry.name.toLowerCase() === 'config');
+const configPath = process.env.NODE_CONFIG_PATH || startupArgv.config || (envConfigPath && envConfigPath.value) || false;
+// Command line arguments win over environment variables for the same key
+const cliKeys = parseArgs(cliArgs).keys;
+
+/**
+ * Maps the part of an APPCONF_ variable name after the prefix to a config path. Segments match
+ * existing keys case-insensitively (an exact match wins), and consecutive segments are joined
+ * back with underscores when the config has such a key, so APPCONF_SERVER_MAX_SIZE reaches
+ * server.max_size. Anything that matches no existing key keeps the plain mapping where every
+ * underscore is a dot.
+ *
+ * @param {import('./index').ConfigObject} data Loaded configuration.
+ * @param {string} name Variable name without the APPCONF_ prefix.
+ * @returns {string} Dotted config path.
+ */
+let resolveEnvKey = (data, name) => {
+    let segments = name.split('_');
+
+    /**
+     * @param {import('./index').ConfigValue} node
+     * @param {number} start
+     * @returns {string[] | null}
+     */
+    let resolve = (node, start) => {
+        if (start >= segments.length) {
+            return [];
+        }
+        if (!node || typeof node !== 'object' || Array.isArray(node)) {
+            return null;
+        }
+        let branch = /** @type {import('./index').ConfigObject} */ (node);
+        let keys = Object.keys(branch);
+        /** @type {Map<string, string>} */
+        let lowerKeys = new Map();
+        keys.forEach(k => {
+            // first key wins, as a linear search would pick it
+            if (!lowerKeys.has(k.toLowerCase())) {
+                lowerKeys.set(k.toLowerCase(), k);
+            }
+        });
+        // Longest candidate first, so an existing key that contains underscores is preferred
+        for (let end = segments.length; end > start; end--) {
+            let candidate = segments.slice(start, end).join('_');
+            let key = keys.includes(candidate) ? candidate : lowerKeys.get(candidate.toLowerCase());
+            if (key) {
+                let rest = resolve(branch[key], end);
+                if (rest) {
+                    return [key].concat(rest);
+                }
+            }
+        }
+        return null;
+    };
+
+    let resolved = resolve(data, 0);
+    return (resolved || segments).join('.');
+};
 
 events.setMaxListeners(0);
 
@@ -85,7 +189,7 @@ let loadConfig = skipEvent => {
             /** @type {string[]} */
             let files;
             if (p.indexOf('*') >= 0) {
-                files = glob.sync(p);
+                files = expandWildcard(p);
             } else {
                 files = [p];
             }
@@ -101,6 +205,76 @@ let loadConfig = skipEvent => {
         };
 
         return contents.replace(/^\s*#\s*@include\s*"([^"]+)"/gim, replaceInclude);
+    }
+
+    // Hand-written instead of fs.globSync, which needs Node 22 while the engines floor is Node 20
+    /**
+     * Expands a wildcard include path. Wildcards (`*` and `?`) are supported in the file name
+     * only, optionally below a `**` directory segment that also searches every subdirectory,
+     * for example "sub/*.toml" or "sub/**" + "/*.toml". Names starting with a dot only match a
+     * pattern that starts with a dot. Matches are sorted, so the merge order (later files win)
+     * does not depend on the order the filesystem lists them in.
+     *
+     * @param {string} pattern Include path containing a wildcard.
+     * @returns {string[]} Sorted list of matching paths.
+     */
+    function expandWildcard(pattern) {
+        let dir = path.dirname(pattern);
+        let base = path.basename(pattern);
+        let recursive = false;
+        if (path.basename(dir) === '**') {
+            recursive = true;
+            dir = path.dirname(dir);
+        }
+        if (/[*?]/.test(dir)) {
+            throw new Error('Unsupported include pattern "' + pattern + '", wildcards are only allowed in the file name');
+        }
+
+        let matcher = new RegExp(
+            '^' +
+                base
+                    .split('')
+                    .map(c => (c === '*' ? '.*' : c === '?' ? '.' : c.replace(/[\\^$.+()[\]{}|]/g, '\\$&')))
+                    .join('') +
+                '$'
+        );
+
+        /** @type {string[]} */
+        let files = [];
+
+        /**
+         * @param {string} directory
+         * @returns {void}
+         */
+        let scan = directory => {
+            /** @type {fs.Dirent[]} */
+            let entries;
+            try {
+                entries = fs.readdirSync(directory, { withFileTypes: true });
+            } catch (E) {
+                let err = /** @type {Error & { code?: string }} */ (E);
+                if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+                    // nothing to include, same as a pattern that matches no file
+                    return;
+                }
+                throw err;
+            }
+            entries.forEach(entry => {
+                if (entry.name.charAt(0) === '.' && base.charAt(0) !== '.') {
+                    return;
+                }
+                let entryPath = path.join(directory, entry.name);
+                if (matcher.test(entry.name)) {
+                    files.push(entryPath);
+                }
+                if (recursive && entry.isDirectory()) {
+                    scan(entryPath);
+                }
+            });
+        };
+        scan(dir);
+
+        return files.sort((a, b) => a.localeCompare(b, 'en'));
     }
 
     /**
@@ -211,10 +385,9 @@ let loadConfig = skipEvent => {
      * Loads a configuration source and appends parsed data to the merge list.
      *
      * @param {string | false} filePath Path to load, or false to skip loading.
-     * @param {boolean} [ignoreMissing] If true, ignores missing files.
      * @returns {void}
      */
-    let loadFromFile = (filePath, ignoreMissing) => {
+    let loadFromFile = filePath => {
         if (!filePath) {
             // do nothing
             return;
@@ -226,11 +399,8 @@ let loadConfig = skipEvent => {
             }
         } catch (E) {
             let err = /** @type {Error & { code?: string }} */ (E);
-            if (err.code !== 'ENOENT' || !ignoreMissing) {
-                // file missing, ignore
-                console.error('[' + filePath + '] ' + err.message);
-                process.exit(1);
-            }
+            console.error('[' + filePath + '] ' + err.message);
+            process.exit(1);
         }
     };
 
@@ -273,6 +443,16 @@ let loadConfig = skipEvent => {
     /** @type {import('./index').ConfigObject} */
     let data = /** @type {import('./index').ConfigObject} */ (/** @type {any} */ (deepExtend)(...sources));
 
+    let argList = cliArgs.slice();
+    envOverrides.forEach(({ name, value }) => {
+        let key = resolveEnvKey(data, name);
+        if (!cliKeys.has(key)) {
+            argList.push(`--${key}=${value}`);
+        }
+    });
+
+    /** @type {Record<string, any>} */
+    let argv = parseArgs(argList).argv;
     delete argv._;
     delete argv.config;
 
@@ -311,6 +491,12 @@ let loadConfig = skipEvent => {
                 }
             }
 
+            if (Array.isArray(eParent[key]) && !Array.isArray(cParent[key])) {
+                // A repeated flag for a single value: the last one wins
+                let list = /** @type {import('./index').ConfigValue[]} */ (eParent[key]);
+                eParent[key] = list[list.length - 1];
+            }
+
             let value = eParent[key];
 
             if (typeof cParent[key] === 'number') {
@@ -319,7 +505,7 @@ let loadConfig = skipEvent => {
                 if (!isNaN(/** @type {any} */ (value))) {
                     value = Number(value);
                 } else {
-                    value = (/** @type {string} */ (value)).toLowerCase();
+                    value = /** @type {string} */ (value).toLowerCase();
                 }
                 let falsy = ['false', 'null', 'undefined', 'no', '0', '', 0];
                 eParent[key] = falsy.includes(/** @type {string | number} */ (value)) ? false : !!value;
@@ -332,11 +518,18 @@ let loadConfig = skipEvent => {
         data = deepExtend(data, argv);
     }
 
+    // A reload has to drop keys that are no longer in the config, not only overwrite the rest
+    let exported = /** @type {Record<string, any>} */ (module.exports);
+    let stale = new Set(Object.keys(exported));
+    stale.delete('configDirectory');
     Object.keys(data).forEach(key => {
+        stale.delete(key);
+        // A config file may define a key named "on", assigning it would throw on the read-only method
         if (key !== 'on') {
-            /** @type {import('./index').WildConfig} */ (module.exports)[key] = data[key];
+            exported[key] = data[key];
         }
     });
+    stale.forEach(key => delete exported[key]);
 
     if (!skipEvent) {
         events.emit('reload');

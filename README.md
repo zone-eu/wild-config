@@ -22,7 +22,7 @@ _wild-config_ tries to load configuration in the following order (missing files 
 
 ### Environment variables
 
-When using environment variables to provide config values, only such keys are merged that already exist in the configuration object, so you have to define a default value in the config file. Use underscores instead of dots for subkeys. Note that all underscores are interpreted as dots when parsing, which means keys with underscores can't be overriden with environment variables.
+Use underscores instead of dots for subkeys. The name after the `APPCONF_` prefix is matched against the keys of the loaded configuration case-insensitively, so `APPCONF_SERVER_APIPORT` also sets `server.apiPort`. When the configuration has a key that itself contains underscores, such as `max_size`, the variable reaches it (`APPCONF_server_max_size`). Names that match no existing key are mapped as-is, with every underscore read as a dot. A command-line argument for the same key wins over the environment variable. Values are converted the same way as command-line values, see below.
 
 Example _config/default.toml_:
 
@@ -49,7 +49,7 @@ This resolves into the following config structure:
 
 ### Command line arguments
 
-Like with the environment variables, when using command-line arguments to provide config values, only such keys are merged that already exist in the configuration object. For subkeys, use dot notation. Value type (numbers, booleans, and strings are supported) is defined by existing value.
+For subkeys, use dot notation. The value type is defined by the existing value: when the config file holds a number, a boolean or an array (a comma separated list), the argument is converted to that type. Otherwise the value is kept as the string that was given, so `--service.secret=0012` stays `"0012"` instead of turning into the number 12. When the same argument is repeated for a single value, the last one wins.
 
 Example _config/default.toml_:
 
@@ -91,6 +91,8 @@ You can also use wildcards to load data from multiple files.
 # @include "/path/to/sub/*.toml"
 # @include "/path/to/sub/**/*.toml"
 ```
+
+Wildcards (`*` and `?`) are supported in the file name only. A `**` directory segment right before the file name also searches every subdirectory. Wildcards anywhere else in the path are an error. Names starting with a dot are skipped unless the pattern starts with a dot too. Matching files are loaded in sorted path order, so when they set the same key, the file that sorts last wins.
 
 **Notes**
 

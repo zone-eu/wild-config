@@ -1,0 +1,4 @@
+ok = 2
+
+["__proto__"]
+polluted = "toml"

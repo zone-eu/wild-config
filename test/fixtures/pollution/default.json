@@ -1,0 +1,6 @@
+{
+    "__proto__": { "polluted": "json" },
+    "constructor": { "prototype": { "polluted": "json-constructor" } },
+    "ok": 1,
+    "nested": { "value": "x" }
+}

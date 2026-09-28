@@ -5,7 +5,7 @@
     "main": "index.js",
     "types": "index.d.ts",
     "scripts": {
-        "test": "grunt",
+        "test": "grunt && node --test test/wild-config-test.js",
         "typecheck": "tsc -p tsconfig.json",
         "update": "rm -rf node_modules package-lock.json && ncu -u && npm install"
     },
@@ -22,16 +22,17 @@
         "url": "https://github.com/zone-eu/wild-config/issues"
     },
     "homepage": "https://github.com/zone-eu/wild-config#readme",
+    "engines": {
+        "node": ">=20.0.0"
+    },
     "dependencies": {
         "deep-extend": "0.6.0",
-        "glob": "13.0.6",
         "minimist": "1.2.8",
         "toml": "5.0.0"
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
         "@types/deep-extend": "0.6.2",
-        "@types/glob": "9.0.0",
         "@types/grunt": "0.4.32",
         "@types/minimist": "1.2.5",
         "@types/node": "26.1.2",

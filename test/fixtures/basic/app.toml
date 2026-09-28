@@ -1,0 +1,4 @@
+title = "app"
+
+[server]
+host = "0.0.0.0"
