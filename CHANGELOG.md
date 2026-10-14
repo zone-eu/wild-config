@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.8](https://github.com/zone-eu/wild-config/compare/v1.7.7...v1.7.8) (2026-10-14)
+
+
+### Bug Fixes
+
+* **deps:** update toml to 5.0.1 ([361b03f](https://github.com/zone-eu/wild-config/commit/361b03f70d9e8062090f8483c5cec3ba79254d64))
+
 ## [1.7.7](https://github.com/zone-eu/wild-config/compare/v1.7.6...v1.7.7) (2026-09-28)
 
 
