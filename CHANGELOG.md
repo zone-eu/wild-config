@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.9](https://github.com/zone-eu/wild-config/compare/v1.7.8...v1.7.9) (2026-10-16)
+
+
+### Bug Fixes
+
+* read "off", "disabled" and "n" as false and keep a non-numeric override as a string ([e6cdd1a](https://github.com/zone-eu/wild-config/commit/e6cdd1a7503e8e23f5b09986d6631900150d3730))
+
 ## [1.7.8](https://github.com/zone-eu/wild-config/compare/v1.7.7...v1.7.8) (2026-10-14)
 
 
