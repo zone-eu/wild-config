@@ -51,6 +51,8 @@ This resolves into the following config structure:
 
 For subkeys, use dot notation. The value type is defined by the existing value: when the config file holds a number, a boolean or an array (a comma separated list), the argument is converted to that type. Otherwise the value is kept as the string that was given, so `--service.secret=0012` stays `"0012"` instead of turning into the number 12. When the same argument is repeated for a single value, the last one wins.
 
+For a boolean, `false`, `no`, `n`, `off`, `disabled`, `0` and an empty value (in any letter case) are `false` and everything else is `true`. For a number, a value that does not parse as one is kept as the string it was rather than becoming `NaN`.
+
 Example _config/default.toml_:
 
 ```toml

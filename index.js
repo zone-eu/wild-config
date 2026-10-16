@@ -500,14 +500,19 @@ let loadConfig = skipEvent => {
             let value = eParent[key];
 
             if (typeof cParent[key] === 'number') {
-                eParent[key] = Number(eParent[key]);
+                // A value that is not a number stays the string it was: a typo that turned into
+                // NaN was read as a number by every comparison and reported by none
+                let number = Number(value);
+                eParent[key] = Number.isNaN(number) ? value : number;
             } else if (typeof cParent[key] === 'boolean') {
                 if (!isNaN(/** @type {any} */ (value))) {
                     value = Number(value);
                 } else {
                     value = /** @type {string} */ (value).toLowerCase();
                 }
-                let falsy = ['false', 'null', 'undefined', 'no', '0', '', 0];
+                // Every spelling of "no" an operator is likely to write. Anything else is true,
+                // so a word missing here would switch a feature on that was meant to be off
+                let falsy = ['false', 'null', 'undefined', 'no', 'n', 'off', 'disabled', '0', '', 0];
                 eParent[key] = falsy.includes(/** @type {string | number} */ (value)) ? false : !!value;
             }
         });

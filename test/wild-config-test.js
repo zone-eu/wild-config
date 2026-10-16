@@ -101,6 +101,27 @@ test('converts overrides toward the type of the existing value', () => {
     assert.strictEqual(result.server.port, 81);
 });
 
+test('reads every spelling of "no" as false and keeps a number that does not parse as the string it was', () => {
+    // "off" and "disabled" used to switch a boolean on
+    for (let value of ['off', 'OFF', 'disabled', 'n', 'no', 'false', 'False', '0', '']) {
+        let { result } = load({ dir: BASIC, args: [`--server.enabled=${value}`] });
+        assert.strictEqual(result.server.enabled, false, `--server.enabled=${value}`);
+    }
+    for (let value of ['on', 'enabled', 'y', 'yes', 'true', '1']) {
+        let { result } = load({ dir: BASIC, args: [`--server.enabled=${value}`] });
+        assert.strictEqual(result.server.enabled, true, `--server.enabled=${value}`);
+    }
+
+    let { result } = load({ dir: BASIC, env: { APPCONF_SERVER_ENABLED: 'off', APPCONF_SERVER_PORT: 'abc' } });
+    assert.strictEqual(result.server.enabled, false);
+    // used to be NaN, which JSON renders as null and every comparison reads as a number
+    assert.strictEqual(result.server.port, 'abc');
+
+    ({ result } = load({ dir: BASIC, args: ['--server.port=80x', '--server.max_size=15'] }));
+    assert.strictEqual(result.server.port, '80x');
+    assert.strictEqual(result.server.max_size, 15);
+});
+
 test('keeps numeric-looking values as strings for string and unknown keys', () => {
     let { result } = load({
         dir: BASIC,
