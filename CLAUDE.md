@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm test                  # node --test test/wild-config-test.js
+npm run test:cjs          # the same suite with require(esm) disabled (see Critical constraints)
 npm run test:coverage     # c8 npm test
 npm run typecheck         # tsc -p tsconfig.json (JSDoc types in the JS sources, no emit)
 npm run lint              # npm run typecheck && eslint .
@@ -23,11 +24,14 @@ node --test --test-name-pattern="maps APPCONF_ variables" test/wild-config-test.
 
 ## Critical constraints
 
-- **CommonJS only, never ESM.** The package is consumed by EmailEngine, which ships as a single-file binary built with [`@yao-pkg/pkg`](https://github.com/yao-pkg/pkg), and by the Zone services (WildDuck, ZoneMTA and others). pkg snapshots a CommonJS module graph and cannot reliably load pure-ESM packages, so this package and every dependency it pulls in must stay CommonJS-compatible. `.ncurc.js` (`upgrade: true`) holds the `reject` list with a reason per entry; `npm run update` honors it.
-- **Engines floor is Node 20.** `expandWildcard()` is hand-written instead of `fs.globSync` because the latter needs Node 22. Do not reach for newer built-ins without checking the floor.
+- **Platform constraints: CommonJS only, Node 20 minimum.** The package is consumed by EmailEngine, which ships as a single-file binary built with [`@yao-pkg/pkg`](https://github.com/yao-pkg/pkg), and by the Zone services (WildDuck, ZoneMTA and others). pkg snapshots a CommonJS module graph and cannot load ES modules, and EmailEngine's DigitalOcean one-click images update EmailEngine but never the Node.js under it.
+    - **Everything that reaches runtime must be genuinely CommonJS-loadable.** The package and every runtime dependency must load through `require()` with `--no-experimental-require-module`; a CommonJS entry that only wraps a dynamic `import()` of ESM code does not count. Node 22+ (and 20.19) load ES modules through `require()` by default, so a plain `npm test` stays green with an ESM-only dependency. Never convert this package to ESM.
+    - **Node.js 20 is the minimum** for code, tests and tooling (`engines.node` is `>=20.0.0`). `expandWildcard()` is hand-written instead of `fs.globSync` because the latter needs Node 22. Do not reach for newer built-ins without checking the floor.
+    - **How to check:** `npm run test:cjs` runs the suite with `NODE_OPTIONS=--no-experimental-require-module` (the per-test child processes inherit it); CI runs it on Node 22 and 24. Run it after any dependency change.
+    - **Pinning:** never add or upgrade to an ESM-only dependency, nor to one that needs a newer Node than 20. `.ncurc.js` (`upgrade: true`) holds the `reject` list (or a `target`) with a reason per entry, keeping the last compatible major; `npm run update` honors it.
 - **Releases are automated via release-please** (`release-please-config.json`, `.github/workflows/release.yaml`, npm trusted publishing with provenance). The version in `package.json` and `CHANGELOG.md` are owned by the bot, do not bump them by hand.
 - **Types are hand-written.** `index.d.ts` is the published declaration file (`export =` of a `WildConfig` object type), and `tsconfig.json` only exists to type-check the JS sources against JSDoc annotations (`allowJs`, `checkJs`, `noEmit`, `strict`). The typecheck runs as part of `npm run lint`, so CI enforces it. TypeScript is held at 6.x in `.ncurc.js`: 7.x reports TS2309 on `index.js` (it reads the `Object.defineProperty(module.exports, 'on', ...)` as an extra export next to the `module.exports =` assignment). `types: ["node"]` is set explicitly because TypeScript 6 no longer loads every `@types` package by default.
-- **ESLint uses the shared flat config** (`eslint.config.js`, ESLint 10). It is the CommonJS template shared across the Postal Systems / Nodemailer packages (eslint:recommended plus the retired eslint-config-nodemailer rules, eslint-config-prettier last); keep it identical to the other repos except for the "Repo-specific" block at the end, where each override carries a one-line reason. There are currently no overrides. CI (`.github/workflows/test.yml`) runs lint, `format:check` and the tests on Node 20, 22 and 24.
+- **ESLint uses the shared flat config** (`eslint.config.js`, ESLint 10). It is the CommonJS template shared across the Postal Systems / Nodemailer packages (eslint:recommended plus the retired eslint-config-nodemailer rules, eslint-config-prettier last); keep it identical to the other repos except for the "Repo-specific" block at the end, where each override carries a one-line reason. There are currently no overrides. CI (`.github/workflows/test.yml`) runs lint, `format:check` and the tests on Node 20, 22 and 24, plus `npm run test:cjs` on Node 22 and 24.
 
 ## Architecture
 
