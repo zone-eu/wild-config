@@ -94,8 +94,10 @@ const cliKeys = parseArgs(cliArgs).keys;
  * Maps the part of an APPCONF_ variable name after the prefix to a config path. Segments match
  * existing keys case-insensitively (an exact match wins), and consecutive segments are joined
  * back with underscores when the config has such a key, so APPCONF_SERVER_MAX_SIZE reaches
- * server.max_size. Anything that matches no existing key keeps the plain mapping where every
- * underscore is a dot.
+ * server.max_size. Environment variable names cannot contain dashes, so when that finds no path,
+ * a second pass also reads a dash in an existing key as an underscore: APPCONF_plugins_my_plugin_myvar
+ * reaches plugins["my-plugin"].myvar. Anything that matches no existing key keeps the plain
+ * mapping where every underscore is a dot.
  *
  * @param {import('./index').ConfigObject} data Loaded configuration.
  * @param {string} name Variable name without the APPCONF_ prefix.
@@ -107,9 +109,10 @@ let resolveEnvKey = (data, name) => {
     /**
      * @param {import('./index').ConfigValue} node
      * @param {number} start
+     * @param {boolean} dashes Whether a dash in a key may match an underscore in the name.
      * @returns {string[] | null}
      */
-    let resolve = (node, start) => {
+    let resolve = (node, start, dashes) => {
         if (start >= segments.length) {
             return [];
         }
@@ -120,27 +123,43 @@ let resolveEnvKey = (data, name) => {
         let keys = Object.keys(branch);
         /** @type {Map<string, string>} */
         let lowerKeys = new Map();
+        /** @type {Map<string, string>} */
+        let dashKeys = new Map();
         keys.forEach(k => {
             // first key wins, as a linear search would pick it
             if (!lowerKeys.has(k.toLowerCase())) {
                 lowerKeys.set(k.toLowerCase(), k);
             }
+            if (dashes && k.includes('-')) {
+                let undashed = k.replace(/-/g, '_').toLowerCase();
+                if (!dashKeys.has(undashed)) {
+                    dashKeys.set(undashed, k);
+                }
+            }
         });
         // Longest candidate first, so an existing key that contains underscores is preferred
         for (let end = segments.length; end > start; end--) {
             let candidate = segments.slice(start, end).join('_');
-            let key = keys.includes(candidate) ? candidate : lowerKeys.get(candidate.toLowerCase());
-            if (key) {
-                let rest = resolve(branch[key], end);
+            // An exact match wins over a case-insensitive one, and either over a key with dashes
+            let lower = candidate.toLowerCase();
+            let key = keys.includes(candidate) ? candidate : lowerKeys.get(lower);
+            // dashKeys only holds keys with dashes, so it never repeats key
+            for (let match of [key, dashKeys.get(lower)]) {
+                if (!match) {
+                    continue;
+                }
+                let rest = resolve(branch[match], end, dashes);
                 if (rest) {
-                    return [key].concat(rest);
+                    return [match].concat(rest);
                 }
             }
         }
         return null;
     };
 
-    let resolved = resolve(data, 0);
+    // The dash-insensitive pass only runs when the strict one finds nothing, so no name that
+    // already resolved without it changes meaning
+    let resolved = resolve(data, 0, false) || resolve(data, 0, true);
     return (resolved || segments).join('.');
 };
 

@@ -186,6 +186,32 @@ test('maps APPCONF_ variables to config paths', () => {
     assert.strictEqual(result.title, 'app');
 });
 
+test('APPCONF_ variables reach keys containing dashes', () => {
+    let { result } = load({
+        dir: path.join(FIXTURES, 'dashes'),
+        env: {
+            APPCONF_plugins_my_plugin_myvar: '5',
+            APPCONF_PLUGINS_MY_PLUGIN_ENABLED: 'yes',
+            APPCONF_plugins_other_plugin_myvar: '6',
+            APPCONF_plugins_third_plugin_myvar: '7',
+            APPCONF_my_plugin_level: '8'
+        }
+    });
+    // underscores in the name read as the dashes of an existing key
+    assert.strictEqual(result.plugins['my-plugin'].myvar, 5);
+    assert.strictEqual(result.plugins['my-plugin'].enabled, true);
+    assert.strictEqual(result.plugins.my, undefined);
+    // a key with underscores that matches exactly wins over the one with dashes
+    assert.strictEqual(result.plugins.other_plugin.myvar, 6);
+    assert.strictEqual(result.plugins['other-plugin'].myvar, 1);
+    // the dashed key is used when only it has the rest of the path
+    assert.strictEqual(result.plugins['third-plugin'].myvar, 7);
+    assert.strictEqual(result.plugins.third_plugin.myvar, undefined);
+    // a path that already resolved without dashes keeps resolving the same way
+    assert.strictEqual(result.my.plugin.level, 8);
+    assert.strictEqual(result['my-plugin'].level, 1);
+});
+
 test('@include resolves relative paths, {ENV} and wildcards in sorted order', () => {
     let { result, stderr } = load({ dir: path.join(FIXTURES, 'includes') });
     assert.strictEqual(stderr, '');

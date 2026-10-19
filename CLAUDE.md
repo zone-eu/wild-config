@@ -37,7 +37,7 @@ Loading order in `loadConfig()`, each later source merged over the earlier ones 
 
 1. `default.*` and `<NODE_ENV>.*` files (`.toml`, `.json`, `.js`) from `NODE_CONFIG_DIR` (default `./config`), defaults first.
 2. The explicit file from `NODE_CONFIG_PATH`, `--config` or `APPCONF_config`. A parse error here or in any loaded file prints the file name and exits the process with status 1.
-3. `APPCONF_*` environment variables, mapped to config paths by `resolveEnvKey()` (case-insensitive key match against the loaded config, underscores rejoined when an existing key contains them, otherwise every underscore is a dot).
+3. `APPCONF_*` environment variables, mapped to config paths by `resolveEnvKey()` (case-insensitive key match against the loaded config, underscores rejoined when an existing key contains them, a second pass reading a dash in an existing key as an underscore only when the first finds no path, otherwise every underscore is a dot).
 4. Command-line arguments (`--a.b=value`), which win over an `APPCONF_` variable for the same key.
 
 Overrides from steps 3 and 4 go through `parseArgs()`, which keeps every given value as a raw string (minimist would turn `"0012"` into 12), and `walkConfig()` then converts toward the type of the existing config value: numbers (a non-numeric value stays a string, never `NaN`), booleans (a fixed list of "no" spellings is false, anything else true), arrays (comma separated). Keys missing from the config are taken as strings.

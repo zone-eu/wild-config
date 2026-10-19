@@ -22,7 +22,7 @@ _wild-config_ tries to load configuration in the following order (missing files 
 
 ### Environment variables
 
-Use underscores instead of dots for subkeys. The name after the `APPCONF_` prefix is matched against the keys of the loaded configuration case-insensitively, so `APPCONF_SERVER_APIPORT` also sets `server.apiPort`. When the configuration has a key that itself contains underscores, such as `max_size`, the variable reaches it (`APPCONF_server_max_size`). Names that match no existing key are mapped as-is, with every underscore read as a dot. A command-line argument for the same key wins over the environment variable. Values are converted the same way as command-line values, see below.
+Use underscores instead of dots for subkeys. The name after the `APPCONF_` prefix is matched against the keys of the loaded configuration case-insensitively, so `APPCONF_SERVER_APIPORT` also sets `server.apiPort`. When the configuration has a key that itself contains underscores, such as `max_size`, the variable reaches it (`APPCONF_server_max_size`). Environment variable names cannot contain dashes, so an underscore also matches a dash in an existing key when nothing matches otherwise: `APPCONF_plugins_my_plugin_enabled` sets `plugins["my-plugin"].enabled`. A key spelled with underscores is preferred over one with dashes. Names that match no existing key are mapped as-is, with every underscore read as a dot. A command-line argument for the same key wins over the environment variable. Values are converted the same way as command-line values, see below.
 
 Example _config/default.toml_:
 

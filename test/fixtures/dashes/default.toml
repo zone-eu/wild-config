@@ -1,0 +1,22 @@
+[plugins."my-plugin"]
+enabled = false
+myvar = 1
+
+[plugins."other-plugin"]
+myvar = 1
+
+[plugins.other_plugin]
+myvar = 1
+
+[plugins."third-plugin"]
+myvar = 1
+
+[plugins.third_plugin]
+othervar = 1
+
+[my]
+[my.plugin]
+level = 1
+
+[my-plugin]
+level = 1
