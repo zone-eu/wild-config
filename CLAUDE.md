@@ -46,7 +46,7 @@ TOML files support `# @include "path"` directives (relative to the including fil
 
 `.js` config files run through `vm.Script` with the real `require`, so a config file is trusted code with full access, not a sandbox. Config directories must be operator-controlled.
 
-There is no exported `reload()`: `loadConfig` is attached to the internal EventEmitter as `reload`, and `config.on(...)` returns that emitter, so a consumer reloads with `config.on('reload', fn).reload()` (the test suite relies on this). Every load after the first emits `reload`. On every load, keys that disappeared from the config are deleted from the exports object, and a config key named `on` is skipped so it cannot overwrite the method.
+There is no exported `reload()`: `loadConfig` is attached to the internal EventEmitter as `reload`, and `config.on(...)` returns that emitter, so a consumer reloads with `config.on('reload', fn).reload()` (the test suite relies on this). Every load after the first emits `reload`. On every load, top-level keys the previous load set and the new one does not are deleted from the exports object (`loadedKeys`); a key the application assigned itself, such as ZoneMTA plugins setting `config.pools`, survives a reload, and a config key named `on` is skipped so it cannot overwrite the method.
 
 ### Testing notes
 

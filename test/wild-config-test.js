@@ -264,6 +264,21 @@ test('reload() drops removed keys and DISABLE_WILD_CONFIG skips loading', t => {
     assert.deepStrictEqual(result.config, { configDirectory: dir, keep: 10 });
     assert.strictEqual(result.reloaded, 1);
 
+    // keys the application assigned itself are not from the config and survive a reload
+    fs.writeFileSync(file, 'keep = 1\ngone = 2\n');
+    ({ result } = load({
+        dir,
+        script: `
+            const fs = require('fs');
+            config.pools = { default: ['a'] };
+            config.keep = 5;
+            fs.writeFileSync(${JSON.stringify(file)}, 'keep = 10\\n');
+            config.on('reload', () => {}).reload();
+            process.stdout.write(JSON.stringify(config));
+        `
+    }));
+    assert.deepStrictEqual(result, { configDirectory: dir, keep: 10, pools: { default: ['a'] } });
+
     ({ result } = load({ dir: BASIC, env: { DISABLE_WILD_CONFIG: 'true' } }));
     assert.deepStrictEqual(result, {});
 });

@@ -146,6 +146,10 @@ let resolveEnvKey = (data, name) => {
 
 events.setMaxListeners(0);
 
+// Top-level keys the last load assigned, the ones a reload may delete again
+/** @type {Set<string>} */
+let loadedKeys = new Set();
+
 module.exports = {
     configDirectory
 };
@@ -523,18 +527,21 @@ let loadConfig = skipEvent => {
         data = deepExtend(data, argv);
     }
 
-    // A reload has to drop keys that are no longer in the config, not only overwrite the rest
+    // A reload has to drop keys that are no longer in the config, not only overwrite the rest.
+    // Only keys an earlier load set are dropped: a key the application assigned itself is not
+    // part of any config source and stays
     let exported = /** @type {Record<string, any>} */ (module.exports);
-    let stale = new Set(Object.keys(exported));
-    stale.delete('configDirectory');
-    Object.keys(data).forEach(key => {
-        stale.delete(key);
-        // A config file may define a key named "on", assigning it would throw on the read-only method
-        if (key !== 'on') {
-            exported[key] = data[key];
+    let previousKeys = loadedKeys;
+    // A config file may define a key named "on", assigning it would throw on the read-only method
+    loadedKeys = new Set(Object.keys(data).filter(key => key !== 'on'));
+    loadedKeys.forEach(key => {
+        exported[key] = data[key];
+    });
+    previousKeys.forEach(key => {
+        if (!loadedKeys.has(key) && key !== 'configDirectory') {
+            delete exported[key];
         }
     });
-    stale.forEach(key => delete exported[key]);
 
     if (!skipEvent) {
         events.emit('reload');
