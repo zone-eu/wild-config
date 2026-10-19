@@ -2,11 +2,11 @@
 
 Opinionated configuration management module for Node.js daemon applications.
 
--   Config files use either [toml](https://github.com/toml-lang/toml), JSON or JavaScript syntax
--   If the config file format is JavaScript, then the value must be exported with "module.exports = {...}"
--   The application can have a config file for default values in ./config/default.toml
--   Main config file path can be provided from a command-line argument, e.g. `--config=/etc/app.toml`
--   Additionally, command-line arguments can be used to override any existing config option
+- Config files use either [toml](https://github.com/toml-lang/toml), JSON or JavaScript syntax
+- If the config file format is JavaScript, then the value must be exported with "module.exports = {...}"
+- The application can have a config file for default values in ./config/default.toml
+- Main config file path can be provided from a command-line argument, e.g. `--config=/etc/app.toml`
+- Additionally, command-line arguments can be used to override any existing config option
 
 ## Loading order
 
@@ -98,12 +98,12 @@ Wildcards (`*` and `?`) are supported in the file name only. A `**` directory se
 
 **Notes**
 
--   Included paths are resolved relative to the path of the configuration file where the include directive is used
--   Included config files do not have to be toml files. Any other supported format works as well
--   If the included config file is a toml file, then it can have its own includes
--   If the config file returns an array, then the array value will become the value of the parent key of the directive only if there are no other subkeys at the same level as the directive
--   In case of duplicate keys, included file will always override the values regardless if `@include` is placed before or after the declaration
--   Special value `{ENV}` is replaced in all file paths by the NODE_ENV value
+- Included paths are resolved relative to the path of the configuration file where the include directive is used
+- Included config files do not have to be toml files. Any other supported format works as well
+- If the included config file is a toml file, then it can have its own includes
+- If the config file returns an array, then the array value will become the value of the parent key of the directive only if there are no other subkeys at the same level as the directive
+- In case of duplicate keys, included file will always override the values regardless if `@include` is placed before or after the declaration
+- Special value `{ENV}` is replaced in all file paths by the NODE_ENV value
 
 ## Application config file
 
@@ -124,8 +124,8 @@ console.log(config.server.enabled);
 
 ### Limitations
 
--   You can not use "on" as a root key. If you do then it is ignored. This key is reserved for the event emitter handler.
--   When providing configuration options from command line then `--config` does not override `root.config` value (if it even exists). This argument is used only for defining the configuration file path.
+- You can not use "on" as a root key. If you do then it is ignored. This key is reserved for the event emitter handler.
+- When providing configuration options from command line then `--config` does not override `root.config` value (if it even exists). This argument is used only for defining the configuration file path.
 
 ## License
 
