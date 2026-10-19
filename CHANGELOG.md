@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.10](https://github.com/zone-eu/wild-config/compare/v1.7.9...v1.7.10) (2026-10-19)
+
+
+### Bug Fixes
+
+* keep keys the application set at runtime when the config is reloaded ([8547227](https://github.com/zone-eu/wild-config/commit/85472271bbb6566c610f88d9c11794bd911ec21b))
+* let APPCONF_ variables reach config keys that contain dashes ([cf813ad](https://github.com/zone-eu/wild-config/commit/cf813ad76590f86565a1c2db2243f3985a4e59ab)), closes [#13](https://github.com/zone-eu/wild-config/issues/13)
+
 ## [1.7.9](https://github.com/zone-eu/wild-config/compare/v1.7.8...v1.7.9) (2026-10-16)
 
 

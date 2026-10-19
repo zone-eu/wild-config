@@ -1,6 +1,6 @@
 {
     "name": "@zone-eu/wild-config",
-    "version": "1.7.9",
+    "version": "1.7.10",
     "description": "Configuration management module",
     "main": "index.js",
     "types": "index.d.ts",
