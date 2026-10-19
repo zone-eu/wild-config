@@ -30,3 +30,8 @@ jobs:
             - run: npm run lint
             - run: npm run format:check
             - run: npm test
+            # Node 22+ loads ES modules through require() by default, which would hide an ESM-only
+            # dependency. Run the suite again with that turned off, as the pkg binary EmailEngine
+            # ships would load it.
+            - run: npm run test:cjs
+              if: matrix.node != '20.x'

@@ -6,6 +6,7 @@
     "types": "index.d.ts",
     "scripts": {
         "test": "node --test test/wild-config-test.js",
+        "test:cjs": "NODE_OPTIONS=--no-experimental-require-module npm test",
         "test:coverage": "c8 npm test",
         "typecheck": "tsc -p tsconfig.json",
         "lint": "npm run typecheck && eslint .",
