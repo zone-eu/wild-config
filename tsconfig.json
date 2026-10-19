@@ -3,12 +3,13 @@
         "target": "ES2020",
         "module": "nodenext",
         "moduleResolution": "nodenext",
+        "types": ["node"],
         "allowJs": true,
         "checkJs": true,
         "noEmit": true,
         "strict": true,
         "skipLibCheck": true,
-        "esModuleInterop": true,
+        "esModuleInterop": true
     },
-    "exclude": ["node_modules", "eslint.config.js"]
+    "exclude": ["node_modules", "coverage", "eslint.config.js"]
 }
