@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.7.10](https://github.com/zone-eu/wild-config/compare/v1.7.9...v1.7.10) (2026-10-19)
+
+
+### Bug Fixes
+
+* keep keys the application set at runtime when the config is reloaded ([8547227](https://github.com/zone-eu/wild-config/commit/85472271bbb6566c610f88d9c11794bd911ec21b))
+* let APPCONF_ variables reach config keys that contain dashes ([cf813ad](https://github.com/zone-eu/wild-config/commit/cf813ad76590f86565a1c2db2243f3985a4e59ab)), closes [#13](https://github.com/zone-eu/wild-config/issues/13)
+
+## [1.7.9](https://github.com/zone-eu/wild-config/compare/v1.7.8...v1.7.9) (2026-10-16)
+
+
+### Bug Fixes
+
+* read "off", "disabled" and "n" as false and keep a non-numeric override as a string ([e6cdd1a](https://github.com/zone-eu/wild-config/commit/e6cdd1a7503e8e23f5b09986d6631900150d3730))
+
+## [1.7.8](https://github.com/zone-eu/wild-config/compare/v1.7.7...v1.7.8) (2026-10-14)
+
+
+### Bug Fixes
+
+* **deps:** update toml to 5.0.1 ([361b03f](https://github.com/zone-eu/wild-config/commit/361b03f70d9e8062090f8483c5cec3ba79254d64))
+
+## [1.7.7](https://github.com/zone-eu/wild-config/compare/v1.7.6...v1.7.7) (2026-09-28)
+
+
+### Bug Fixes
+
+* keep string values as strings, deterministic wildcard includes, case-insensitive APPCONF keys, reload drops removed keys ([ff9ab17](https://github.com/zone-eu/wild-config/commit/ff9ab1721f2b3463cfa0258f2f19cc99b998f4da))
+
 ## [1.7.6](https://github.com/zone-eu/wild-config/compare/v1.7.5...v1.7.6) (2026-07-20)
 
 

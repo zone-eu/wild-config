@@ -2,11 +2,11 @@
 
 Opinionated configuration management module for Node.js daemon applications.
 
--   Config files use either [toml](https://github.com/toml-lang/toml), JSON or JavaScript syntax
--   If the config file format is JavaScript, then the value must be exported with "module.exports = {...}"
--   The application can have a config file for default values in ./config/default.toml
--   Main config file path can be provided from a command-line argument, e.g. `--config=/etc/app.toml`
--   Additionally, command-line arguments can be used to override any existing config option
+- Config files use either [toml](https://github.com/toml-lang/toml), JSON or JavaScript syntax
+- If the config file format is JavaScript, then the value must be exported with "module.exports = {...}"
+- The application can have a config file for default values in ./config/default.toml
+- Main config file path can be provided from a command-line argument, e.g. `--config=/etc/app.toml`
+- Additionally, command-line arguments can be used to override any existing config option
 
 ## Loading order
 
@@ -22,7 +22,7 @@ _wild-config_ tries to load configuration in the following order (missing files 
 
 ### Environment variables
 
-When using environment variables to provide config values, only such keys are merged that already exist in the configuration object, so you have to define a default value in the config file. Use underscores instead of dots for subkeys. Note that all underscores are interpreted as dots when parsing, which means keys with underscores can't be overriden with environment variables.
+Use underscores instead of dots for subkeys. The name after the `APPCONF_` prefix is matched against the keys of the loaded configuration case-insensitively, so `APPCONF_SERVER_APIPORT` also sets `server.apiPort`. When the configuration has a key that itself contains underscores, such as `max_size`, the variable reaches it (`APPCONF_server_max_size`). Environment variable names cannot contain dashes, so an underscore also matches a dash in an existing key when nothing matches otherwise: `APPCONF_plugins_my_plugin_enabled` sets `plugins["my-plugin"].enabled`. A key spelled with underscores is preferred over one with dashes. Names that match no existing key are mapped as-is, with every underscore read as a dot. A command-line argument for the same key wins over the environment variable. Values are converted the same way as command-line values, see below.
 
 Example _config/default.toml_:
 
@@ -49,7 +49,9 @@ This resolves into the following config structure:
 
 ### Command line arguments
 
-Like with the environment variables, when using command-line arguments to provide config values, only such keys are merged that already exist in the configuration object. For subkeys, use dot notation. Value type (numbers, booleans, and strings are supported) is defined by existing value.
+For subkeys, use dot notation. The value type is defined by the existing value: when the config file holds a number, a boolean or an array (a comma separated list), the argument is converted to that type. Otherwise the value is kept as the string that was given, so `--service.secret=0012` stays `"0012"` instead of turning into the number 12. When the same argument is repeated for a single value, the last one wins.
+
+For a boolean, `false`, `no`, `n`, `off`, `disabled`, `0` and an empty value (in any letter case) are `false` and everything else is `true`. For a number, a value that does not parse as one is kept as the string it was rather than becoming `NaN`.
 
 Example _config/default.toml_:
 
@@ -92,14 +94,16 @@ You can also use wildcards to load data from multiple files.
 # @include "/path/to/sub/**/*.toml"
 ```
 
+Wildcards (`*` and `?`) are supported in the file name only. A `**` directory segment right before the file name also searches every subdirectory. Wildcards anywhere else in the path are an error. Names starting with a dot are skipped unless the pattern starts with a dot too. Matching files are loaded in sorted path order, so when they set the same key, the file that sorts last wins.
+
 **Notes**
 
--   Included paths are resolved relative to the path of the configuration file where the include directive is used
--   Included config files do not have to be toml files. Any other supported format works as well
--   If the included config file is a toml file, then it can have its own includes
--   If the config file returns an array, then the array value will become the value of the parent key of the directive only if there are no other subkeys at the same level as the directive
--   In case of duplicate keys, included file will always override the values regardless if `@include` is placed before or after the declaration
--   Special value `{ENV}` is replaced in all file paths by the NODE_ENV value
+- Included paths are resolved relative to the path of the configuration file where the include directive is used
+- Included config files do not have to be toml files. Any other supported format works as well
+- If the included config file is a toml file, then it can have its own includes
+- If the config file returns an array, then the array value will become the value of the parent key of the directive only if there are no other subkeys at the same level as the directive
+- In case of duplicate keys, included file will always override the values regardless if `@include` is placed before or after the declaration
+- Special value `{ENV}` is replaced in all file paths by the NODE_ENV value
 
 ## Application config file
 
@@ -120,8 +124,8 @@ console.log(config.server.enabled);
 
 ### Limitations
 
--   You can not use "on" as a root key. If you do then it is ignored. This key is reserved for the event emitter handler.
--   When providing configuration options from command line then `--config` does not override `root.config` value (if it even exists). This argument is used only for defining the configuration file path.
+- You can not use "on" as a root key. If you do then it is ignored. This key is reserved for the event emitter handler.
+- When providing configuration options from command line then `--config` does not override `root.config` value (if it even exists). This argument is used only for defining the configuration file path.
 
 ## License
 

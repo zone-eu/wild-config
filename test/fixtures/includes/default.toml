@@ -1,0 +1,11 @@
+[inc]
+# @include "sub/*.toml"
+
+[deep]
+# @include "sub/**/*.toml"
+
+[envinc]
+# @include "env-{ENV}.toml"
+
+[rel]
+# @include "rel/one.toml"

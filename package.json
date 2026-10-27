@@ -1,12 +1,18 @@
 {
     "name": "@zone-eu/wild-config",
-    "version": "1.7.6",
+    "version": "1.7.10",
     "description": "Configuration management module",
     "main": "index.js",
     "types": "index.d.ts",
     "scripts": {
-        "test": "grunt",
+        "test": "node --test test/wild-config-test.js",
+        "test:cjs": "NODE_OPTIONS=--no-experimental-require-module npm test",
+        "test:coverage": "c8 npm test",
         "typecheck": "tsc -p tsconfig.json",
+        "lint": "npm run typecheck && eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
         "update": "rm -rf node_modules package-lock.json && ncu -u && npm install"
     },
     "repository": {
@@ -22,26 +28,24 @@
         "url": "https://github.com/zone-eu/wild-config/issues"
     },
     "homepage": "https://github.com/zone-eu/wild-config#readme",
+    "engines": {
+        "node": ">=20.0.0"
+    },
     "dependencies": {
         "deep-extend": "0.6.0",
-        "glob": "13.0.6",
         "minimist": "1.2.8",
         "toml": "5.0.1"
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
         "@types/deep-extend": "0.6.2",
-        "@types/glob": "9.0.0",
-        "@types/grunt": "0.4.32",
         "@types/minimist": "1.2.5",
         "@types/node": "26.6.5",
+        "c8": "12.0.0",
         "eslint": "10.13.0",
-        "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "10.1.8",
         "globals": "17.13.0",
-        "grunt": "1.6.3",
-        "grunt-cli": "1.5.0",
-        "grunt-eslint": "27.0.0",
-        "typescript": "7.0.2"
+        "prettier": "3.9.10",
+        "typescript": "6.0.3"
     }
 }

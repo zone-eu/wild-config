@@ -1,0 +1,13 @@
+title = "default"
+
+[server]
+port = 3000
+host = "127.0.0.1"
+enabled = false
+secret = "changeme"
+list = ["a", "b"]
+max_size = 10
+empty = ""
+
+[server.tls]
+cert = "default.pem"
